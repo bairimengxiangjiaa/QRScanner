@@ -7,14 +7,13 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.qrscanner.domain.model.ContentType
 import com.example.qrscanner.domain.model.ScannedData
 import com.example.qrscanner.domain.usecase.AnalyzeBarcodeUseCase
 import com.google.mlkit.vision.barcode.BarcodeScanner
-import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,10 +25,15 @@ import javax.inject.Inject
 /**
  * 扫描页 ViewModel
  * 职责：管理 CameraX 生命周期 + ML Kit 分析 + UI 状态
+ *
+ * 权限管理说明：
+ *   相机权限的「是否已授权」由 ScannerScreen 通过 ActivityResultContracts 管理（单一真相源），
+ *   ViewModel 不持有权限状态，避免双重真相。ViewModel 仅管理扫描结果与相机绑定错误。
  */
 @HiltViewModel
 class ScannerViewModel @Inject constructor(
-    private val barcodeScanner: BarcodeScanner
+    private val barcodeScanner: BarcodeScanner,
+    private val analyzeBarcodeUseCase: AnalyzeBarcodeUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ScannerUiState>(ScannerUiState.Scanning)
@@ -51,14 +55,22 @@ class ScannerViewModel @Inject constructor(
 
     /**
      * 绑定相机到生命周期
-     * 在 Screen 的 DisposableEffect 中调用
+     *
+     * 关键约束：CameraX 的所有 API（含 bindToLifecycle）必须在主线程调用，
+     * 否则会抛 IllegalStateException 导致应用闪退。
+     * 因此 Future 的回调必须运行在主线程 Executor 上，
+     * analysisExecutor 仅用于图像分析（后台线程）。
      */
     @SuppressLint("UnsafeOptInUsageError")
     fun bindCamera(
         lifecycleOwner: LifecycleOwner,
         previewView: PreviewView
     ) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(previewView.context)
+        val context = previewView.context
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+        // CameraX 强制主线程：使用主线程 Executor 执行回调
+        val mainExecutor = ContextCompat.getMainExecutor(context)
+
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
 
@@ -67,7 +79,7 @@ class ScannerViewModel @Inject constructor(
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
 
-            // 图像分析用例 - 接入 ML Kit
+            // 图像分析用例 - 接入 ML Kit（分析在后台线程执行）
             imageAnalysis.setAnalyzer(analysisExecutor) { imageProxy ->
                 processImage(imageProxy)
             }
@@ -81,10 +93,25 @@ class ScannerViewModel @Inject constructor(
                     imageAnalysis
                 )
             } catch (e: Exception) {
-                // 相机绑定失败（设备不支持、权限问题等）
-                _uiState.value = ScannerUiState.PermissionDenied
+                // 相机绑定失败（设备不支持等），通知 UI 展示错误
+                _uiState.value = ScannerUiState.CameraError
             }
-        }, analysisExecutor)
+        }, mainExecutor)
+    }
+
+    /**
+     * 解绑相机，释放 CameraX 资源
+     * 在 ScannerScreen 的 DisposableEffect.onDispose 中调用
+     */
+    @SuppressLint("UnsafeOptInUsageError")
+    fun unbindCamera(context: android.content.Context) {
+        try {
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            val cameraProvider = cameraProviderFuture.get()
+            cameraProvider.unbindAll()
+        } catch (e: Exception) {
+            // 忽略：退出时解绑失败不影响用户体验
+        }
     }
 
     /**
@@ -130,7 +157,7 @@ class ScannerViewModel @Inject constructor(
         lastDetectedTimestamp = now
 
         val scannedData = ScannedData(rawValue = rawValue, format = format)
-        val contentType = AnalyzeBarcodeUseCase.execute(scannedData)
+        val contentType = analyzeBarcodeUseCase.execute(scannedData)
 
         _uiState.value = ScannerUiState.Detected(contentType)
     }
@@ -141,6 +168,13 @@ class ScannerViewModel @Inject constructor(
     fun continueScanning() {
         _uiState.value = ScannerUiState.Scanning
         lastDetectedTimestamp = 0L
+    }
+
+    /**
+     * 相机出错后用户点击重试
+     */
+    fun retryCamera() {
+        _uiState.value = ScannerUiState.Scanning
     }
 
     override fun onCleared() {

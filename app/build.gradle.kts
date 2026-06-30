@@ -36,21 +36,17 @@ android {
         }
     }
 
-    // Release 签名配置：优先使用 keystore.properties，缺失时回退到 debug 签名
+    // Release 签名配置：仅当 keystore.properties 存在时才配置
+    // 缺失时不配置 release 签名 —— assembleRelease 会输出未签名包（无法安装），
+    // 以 fail-fast 方式避免误用 debug 签名发布生产包。
+    // ⚠️ 生产发布前必须配置 keystore.properties（参考 keystore.properties.example）
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {
-                storeFile = file(keystoreProperties["storeFile"] as String)
+                storeFile = rootProject.file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
-            } else {
-                // 开发阶段无 keystore.properties 时使用 debug 签名
-                // ⚠️ 生产发布前必须配置 keystore.properties
-                storeFile = file("debug.keystore")
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
             }
         }
     }
@@ -58,7 +54,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            signingConfig = signingConfigs.getByName("release")
+            // 仅在具备正式签名时才签名 release 包
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

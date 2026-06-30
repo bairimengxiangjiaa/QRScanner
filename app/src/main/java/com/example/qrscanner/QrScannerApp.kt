@@ -1,12 +1,14 @@
 package com.example.qrscanner
 
 import android.app.Application
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,29 +37,23 @@ class QrScannerApp : Application()
 fun ScannerRoot() {
     val context = LocalContext.current
     val viewModel: ScannerViewModel = hiltViewModel()
-    val clipboardRepository: ClipboardRepository = hiltClipboardRepository()
 
-    Surface(modifier = Modifier.fillMaxSize()) {
-        ScannerScreen(
-            viewModel = viewModel,
-            clipboardRepository = clipboardRepository,
-            onOpenApp = { url ->
-                openApp(context, url)
-            }
-        )
+    // C3 修复：remember 缓存 ClipboardRepository，避免每次 recomposition 重复调用 EntryPointAccessors
+    val clipboardRepository: ClipboardRepository = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ClipboardRepositoryEntryPoint::class.java
+        ).clipboardRepository()
     }
-}
 
-/**
- * 通过 Hilt EntryPoint 获取 ClipboardRepository 实例
- * Compose 中的非 ViewModel 依赖需要通过 EntryPoint 机制获取
- */
-@Composable
-private fun hiltClipboardRepository(): ClipboardRepository {
-    return EntryPointAccessors.fromApplication(
-        LocalContext.current.applicationContext,
-        ClipboardRepositoryEntryPoint::class.java
-    ).clipboardRepository()
+    // MainActivity 已提供 Surface 背景，此处不再嵌套冗余 Surface
+    ScannerScreen(
+        viewModel = viewModel,
+        clipboardRepository = clipboardRepository,
+        onOpenApp = { url ->
+            openApp(context, url)
+        }
+    )
 }
 
 /**
@@ -85,13 +81,13 @@ private fun openApp(context: android.content.Context, url: String) {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        // 使用 createChooser 防止 Intent 被拦截，标题明确提示用户
         val chooser = Intent.createChooser(intent, "选择应用打开").apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(chooser)
-    } catch (e: Exception) {
-        // 目标 App 未安装或无对应处理器
+    } catch (e: ActivityNotFoundException) {
         Toast.makeText(context, "未安装对应应用", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        Toast.makeText(context, "无法打开应用", Toast.LENGTH_SHORT).show()
     }
 }

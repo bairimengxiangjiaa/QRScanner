@@ -3,6 +3,7 @@ package com.example.qrscanner.domain.usecase
 import com.example.qrscanner.domain.model.ContentType
 import com.example.qrscanner.domain.model.ScannedData
 import com.example.qrscanner.domain.usecase.ValidateUrlUseCase.ValidationResult
+import javax.inject.Inject
 
 /**
  * 分析条码内容，将其分类为不同的 ContentType
@@ -21,18 +22,22 @@ import com.example.qrscanner.domain.usecase.ValidateUrlUseCase.ValidationResult
  *   - 不解析 URL 域名或参数
  *   - 不检测 URL 是否指向恶意网站
  */
-object AnalyzeBarcodeUseCase {
+class AnalyzeBarcodeUseCase @Inject constructor(
+    private val validateUrlUseCase: ValidateUrlUseCase
+) {
 
-    /**
-     * 扫描内容最大允许长度（4096 字符）
-     * 超过此长度的内容直接降级为纯文本展示，防止内存消耗攻击
-     */
-    private const val MAX_CONTENT_LENGTH = 4096
+    companion object {
+        /**
+         * 扫描内容最大允许长度（4096 字符）
+         * 超过此长度的内容直接降级为纯文本展示，防止内存消耗攻击
+         */
+        private const val MAX_CONTENT_LENGTH = 4096
 
-    /**
-     * 对外暴露的最大长度常量，供 UI 层做截断展示
-     */
-    const val DISPLAY_MAX_LENGTH = 512
+        /**
+         * 对外暴露的最大长度常量，供 UI 层做截断展示
+         */
+        const val DISPLAY_MAX_LENGTH = 512
+    }
 
     /**
      * 分析扫描到的条码内容，分类为 ContentType
@@ -52,7 +57,7 @@ object AnalyzeBarcodeUseCase {
         }
 
         // 统一通过 ValidateUrlUseCase 进行协议校验
-        return when (val result = ValidateUrlUseCase.validate(raw)) {
+        return when (val result = validateUrlUseCase.validate(raw)) {
             is ValidationResult.Safe -> {
                 // 安全协议目前只有 https
                 ContentType.HttpsUrl(raw)

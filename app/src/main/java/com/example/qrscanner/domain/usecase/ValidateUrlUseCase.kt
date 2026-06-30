@@ -1,5 +1,7 @@
 package com.example.qrscanner.domain.usecase
 
+import javax.inject.Inject
+
 /**
  * URL 安全校验用例
  *
@@ -18,24 +20,25 @@ package com.example.qrscanner.domain.usecase
  *   - 不校验 URL 域名真实性（非 phishing 检测范畴）
  *   - 不校验 URL 参数合法性
  */
-object ValidateUrlUseCase {
+class ValidateUrlUseCase @Inject constructor() {
 
     // 允许直接打开的安全协议（无需二次确认）
-    private val DIRECT_OPEN_PROTOCOLS = setOf("https")
+    private val directOpenProtocols = setOf("https")
 
     // 需要二次确认的协议（自定义 App 协议）
-    private val CONFIRM_REQUIRED_PROTOCOLS = setOf("http", "weixin", "alipays", "alipay")
+    private val confirmRequiredProtocols = setOf("http", "weixin", "alipays", "alipay")
 
     // 绝对禁止的危险协议黑名单
-    private val BLOCKED_PROTOCOLS = setOf(
+    private val blockedProtocols = setOf(
         "javascript", "file", "content", "data", "intent"
     )
 
     /**
      * 控制字符正则：匹配全部 ASCII 控制字符 0x00-0x1F 以及 0x7F（DEL）
-     * 不遗漏任何控制字符，防止 null byte、换行符(LF/CR)、制表符等绕过协议检测
+     * 包含 LF(0x0A)、CR(0x0D)、HT(0x09) 等全部控制字符，
+     * 防止 null byte、换行符、制表符等绕过协议检测
      */
-    private val CONTROL_CHAR_REGEX = Regex("[\\u0000-\\u001F\\u007F]")
+    private val controlCharRegex = Regex("[\\u0000-\\u001F\\u007F]")
 
     /**
      * 校验 URL 是否安全
@@ -47,7 +50,7 @@ object ValidateUrlUseCase {
         val trimmed = url.trim()
 
         // 2. 检查是否包含控制字符（null byte 注入、换行注入等）
-        if (CONTROL_CHAR_REGEX.containsMatchIn(trimmed)) {
+        if (controlCharRegex.containsMatchIn(trimmed)) {
             return ValidationResult.Blocked("control_chars")
         }
 
@@ -67,17 +70,17 @@ object ValidateUrlUseCase {
         }
 
         // 5. 黑名单优先检查
-        if (protocol in BLOCKED_PROTOCOLS) {
+        if (protocol in blockedProtocols) {
             return ValidationResult.Blocked(protocol)
         }
 
         // 6. 安全协议白名单
-        if (protocol in DIRECT_OPEN_PROTOCOLS) {
+        if (protocol in directOpenProtocols) {
             return ValidationResult.Safe(protocol)
         }
 
         // 7. 需要确认的协议
-        if (protocol in CONFIRM_REQUIRED_PROTOCOLS) {
+        if (protocol in confirmRequiredProtocols) {
             return ValidationResult.RequiresConfirmation(protocol)
         }
 
