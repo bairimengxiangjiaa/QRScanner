@@ -1,5 +1,6 @@
 package com.example.qrscanner
 
+import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -15,14 +16,23 @@ import com.example.qrscanner.ui.scanner.ScannerViewModel
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.components.SingletonComponent
+
+/**
+ * Hilt Application 入口
+ * AndroidManifest 中 android:name=".QrScannerApp" 引用此类
+ * @HiltAndroidApp 触发 Hilt 代码生成，提供 ViewModel 注入、EntryPoint 等能力
+ */
+@HiltAndroidApp
+class QrScannerApp : Application()
 
 /**
  * Compose 根入口
  * 组装 ScannerScreen 并处理 App 跳转事件
  */
 @Composable
-fun QrScannerApp() {
+fun ScannerRoot() {
     val context = LocalContext.current
     val viewModel: ScannerViewModel = hiltViewModel()
     val clipboardRepository: ClipboardRepository = hiltClipboardRepository()
