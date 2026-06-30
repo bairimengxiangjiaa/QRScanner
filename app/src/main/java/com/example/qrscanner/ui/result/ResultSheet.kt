@@ -9,10 +9,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,6 +69,15 @@ fun ResultSheet(
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // 标题
+            Text(
+                text = "扫描结果",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // 内容展示
             Text(
                 text = getContentDisplayText(contentType),
@@ -82,7 +93,6 @@ fun ResultSheet(
             // 根据内容类型展示操作按钮
             when (contentType) {
                 is ContentType.HttpsUrl -> {
-                    // https 链接：直接打开 + 复制
                     ActionButton(
                         text = "打开链接",
                         icon = Icons.Filled.Language,
@@ -97,14 +107,14 @@ fun ResultSheet(
                 is ContentType.HttpUrl -> {
                     // http 链接：非加密，需要二次确认（MITM 风险）
                     Text(
-                        text = "⚠ 未加密链接（存在安全风险）",
+                        text = "⚠ 未加密链接，存在安全风险",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     ActionButton(
                         text = "仍要打开",
-                        icon = Icons.Filled.OpenInNew,
+                        icon = Icons.AutoMirrored.Filled.OpenInNew,
                         onClick = {
                             pendingUrl = contentType.url
                             pendingAppName = "浏览器"
@@ -118,10 +128,9 @@ fun ResultSheet(
                 }
 
                 is ContentType.WeChatLink -> {
-                    // 微信：需要二次确认
                     ActionButton(
                         text = "打开微信",
-                        icon = Icons.Filled.OpenInNew,
+                        icon = Icons.AutoMirrored.Filled.OpenInNew,
                         onClick = {
                             pendingUrl = contentType.url
                             pendingAppName = "微信"
@@ -135,10 +144,9 @@ fun ResultSheet(
                 }
 
                 is ContentType.AlipayLink -> {
-                    // 支付宝：需要二次确认
                     ActionButton(
                         text = "打开支付宝",
-                        icon = Icons.Filled.OpenInNew,
+                        icon = Icons.AutoMirrored.Filled.OpenInNew,
                         onClick = {
                             pendingUrl = contentType.url
                             pendingAppName = "支付宝"
@@ -152,7 +160,6 @@ fun ResultSheet(
                 }
 
                 is ContentType.PlainText -> {
-                    // 纯文本：仅复制
                     ActionButton(
                         text = "复制",
                         icon = Icons.Filled.ContentCopy,
@@ -161,7 +168,7 @@ fun ResultSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // 继续扫描按钮
             TextButton(onClick = onDismiss) {
@@ -196,7 +203,8 @@ private fun ActionButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Icon(icon, contentDescription = null)
         Spacer(modifier = Modifier.width(8.dp))
@@ -211,7 +219,8 @@ private fun ActionButton(
 private fun OutlinedActionButtons(onCopy: () -> Unit) {
     OutlinedButton(
         onClick = onCopy,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Icon(Icons.Filled.ContentCopy, contentDescription = null)
         Spacer(modifier = Modifier.width(8.dp))

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Adaptive Icon 前景层
+    设计：QR 扫描框 + 四角标记 + 中心扫描线，与 App 主界面视觉统一
+    安全区域：中心 72dp（viewport 108 中 18~90 范围）
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 外层扫描框（半透明白色边框） -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeAlpha="0.15"
+        android:pathData="M32,32h44v44h-44z" />
+
+    <!-- 左上角标记 -->
+    <path
+        android:strokeColor="#00E676"
+        android:strokeWidth="4"
+        android:strokeLineCap="square"
+        android:pathData="M34,44L34,34L44,34" />
+
+    <!-- 右上角标记 -->
+    <path
+        android:strokeColor="#00E676"
+        android:strokeWidth="4"
+        android:strokeLineCap="square"
+        android:pathData="M64,34L74,34L74,44" />
+
+    <!-- 左下角标记 -->
+    <path
+        android:strokeColor="#00E676"
+        android:strokeWidth="4"
+        android:strokeLineCap="square"
+        android:pathData="M34,64L34,74L44,74" />
+
+    <!-- 右下角标记 -->
+    <path
+        android:strokeColor="#00E676"
+        android:strokeWidth="4"
+        android:strokeLineCap="square"
+        android:pathData="M64,74L74,74L74,64" />
+
+    <!-- 中心扫描线 -->
+    <path
+        android:strokeColor="#00E676"
+        android:strokeWidth="3"
+        android:strokeAlpha="0.9"
+        android:pathData="M38,54L70,54" />
+
+    <!-- 扫描线下方微光 -->
+    <path
+        android:strokeColor="#00E676"
+        android:strokeWidth="1"
+        android:strokeAlpha="0.25"
+        android:pathData="M40,58L68,58" />
+</vector>

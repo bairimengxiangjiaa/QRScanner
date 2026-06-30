@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.QRScanner" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        基础主题：无 ActionBar，透明系统栏
+        enableEdgeToEdge() 运行时控制 system bar 透明度和图标外观，
+        此处仅需提供无 ActionBar 的基础壳。
+    -->
+    <style name="Theme.QRScanner" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
 </resources>
