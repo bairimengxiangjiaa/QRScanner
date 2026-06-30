@@ -1,0 +1,42 @@
+# Built application file
+*.apk
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
+# local.properties 已排除：包含本机 SDK 路径，不应提交
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+.navigation/
+captures/
+
+# Keystore files (MUST NOT be committed)
+*.jks
+*.keystore
+keystore.properties
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+nul
+
+# Log files
+*.log
